@@ -3,7 +3,8 @@ from typing import Generic, TypeVar
 
 from typing_extensions import override
 
-import barrel
+from barrel.core import IntGEZ, Policy, Submitter
+from .openbox import TaskId
 
 
 class WorkerEventType(Enum):
@@ -15,26 +16,29 @@ WorkerId = TypeVar("WorkerId")
 
 
 class SimplePolicy(
-    barrel.Policy[tuple[WorkerId, WorkerEventType]],
+    Policy[tuple[WorkerId, WorkerEventType]],
     Generic[WorkerId],
 ):
-    __task_id: barrel.openbox.TaskId
-    __pool_size: barrel.IntGEZ
-    __submitter: barrel.core.Submitter[WorkerId, barrel.openbox.TaskId]
+    __task_id: TaskId
+    __pool_size: IntGEZ
+    __submitter: Submitter[WorkerId, TaskId]
     __submitted_workers: set[WorkerId]
     __running_workers: set[WorkerId]
 
     def __init__(
         self,
-        task_id: barrel.openbox.TaskId,
-        pool_size: barrel.IntGEZ,
-        submitter: barrel.Submitter[WorkerId, barrel.openbox.TaskId],
+        task_id: TaskId,
+        pool_size: IntGEZ,
+        submitter: Submitter[WorkerId, TaskId],
     ) -> None:
         super().__init__()
 
         self.__task_id = task_id
         self.__pool_size = pool_size
         self.__submitter = submitter
+        self.__submitted_workers = set()
+        self.__running_workers = set()
+
         for _ in range(pool_size):
             worker_id = self.__submitter.submit(self.__task_id)
             self.__submitted_workers.add(worker_id)

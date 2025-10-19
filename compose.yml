@@ -1,94 +1,114 @@
 services:
-  slurmctld: # submitter
+  slurmctld:
     build: 
       context: .
       dockerfile: services/slurm.Dockerfile
+    command: ["slurmctld"]
+    hostname: slurmctld
+    volumes:
+      - etc_munge:/etc/munge
+      - etc_slurm:/etc/slurm
+      - slurm_jobdir:/data
+      - var_log_slurm:/var/log/slurm
+      - ./services/:/etc/slurm/
+    expose:
+      - "6817"
+      - "22"
+    ports:
+      - 6817:6817
     networks:
       - cluster
       - virtual_machine
 
-  # node:
-  #   build: 
-  #     context: .
-  #     dockerfile: services/slurm.Dockerfile
-  #   depends_on:
-  #     - slurmctld
-  #   networks:
-  #     - cluster
+  node:
+    build: 
+      context: .
+      dockerfile: services/slurm.Dockerfile
+    command: ["slurmd"]
+    hostname: node
+    volumes:
+      - etc_munge:/etc/munge
+      - etc_slurm:/etc/slurm
+      - slurm_jobdir:/data
+      - var_log_slurm:/var/log/slurm
+      - ./services/:/etc/slurm/
+    expose:
+      - "6818"
+    depends_on:
+      - slurmctld
+    networks:
+      - cluster
 
-  # mongo:
-  #   image: mongo 
-  #   environment:
-  #     - MONGO_INITDB_ROOT_USERNAME=openbox
-  #     - MONGO_INITDB_ROOT_PASSWORD=openbox
-  #     - MONGO_INITDB_DATABASE=openbox
-  #   networks:
-  #     - virtual_machine
-  #
-  # openbox:
-  #   build: # TODO
-  #     context: .
-  #     dockerfile: services/open-box.Dockerfile
-  #   depends_on:
-  #     - mongo
-  #   networks:
-  #     - virtual_machine
-  #
-  # postgres:
-  #   image: postgres
-  #   environment:
-  #     POSTGRES_USER: orchestrator
-  #     POSTGRES_PASSWORD: orchestrator
-  #   networks:
-  #     - virtual_machine
-  #
-  # orchestrator:
-  #   build:
-  #     context: .
-  #     dockerfile: services/orchestrator.Dockerfile
-  #
-  #   depends_on:
-  #     - postgres
-  #     - openbox
-  #     - slurmctld
-  #   networks:
-  #     - virtual_machine
-  #     - cluster
+  mongo:
+    image: mongo 
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=openbox
+      - MONGO_INITDB_ROOT_PASSWORD=openbox
+      - MONGO_INITDB_DATABASE=openbox
+    networks:
+      - virtual_machine
+
+  open-box:
+    build:
+      context: .
+      dockerfile: services/open-box.Dockerfile
+    depends_on:
+      - mongo
+    ports:
+      - 8000:8000
+    expose:
+      - "8000"
+    networks:
+      - virtual_machine
+      - cluster
+
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_USER: orchestrator
+      POSTGRES_PASSWORD: orchestrator
+    networks:
+      - virtual_machine
+
+  orchestrator:
+    build:
+      context: .
+      dockerfile: services/orchestrator.Dockerfile
+    volumes:
+      - orchestrator_app:/app
+    depends_on:
+      - postgres
+      - open-box
+      - slurmctld
+    networks:
+      - virtual_machine
+      - cluster
 
 volumes:
   etc_munge:
   etc_slurm:
   slurm_jobdir:
-    # driver: local
-    # driver_opts:
-    #   o: bind
-    #   type: none
-    #   device: /home/cicio/projects/openbox-on-slurm/
-  var_lib_mysql:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: ./
   var_log_slurm:
+  orchestrator_app:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: ./ 
   pg_migrations:
-    # driver: local
-    # driver_opts:
-    #   o: bind
-    #   type: none
-    #   device: /home/cicio/projects/openbox-on-slurm/
-  shared_volume:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: ./
 
 networks:
   cluster:
     driver: bridge
   virtual_machine:
     driver: bridge
-
-  # mariadb:
-  #   image: mariadb:10.11
-  #   networks:
-  #     - cluster
-  #
-  # slurmdbd:
-  #   depends_on:
-  #     - mariadb
-  #   networks:
-  #     - cluster
-    # depends_on:
-    #   - slurmdbd

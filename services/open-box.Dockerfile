@@ -1,42 +1,24 @@
-FROM python:3.11.14-slim-trixie
+FROM debian:trixie-slim
 
 RUN apt-get update \
     && apt-get upgrade -y \
-    && apt-get install git swig -y
+    && apt-get install -y \
+        git \
+        swig \
+        build-essential
 
-RUN pip install --upgrade pip setuptools wheel
+COPY --from=docker.io/astral/uv:latest /uv /uvx /bin/
 
-RUN git clone https://github.com/PKU-DAIR/open-box.git \
+RUN git clone --depth=1 https://github.com/PKU-DAIR/open-box.git \
     && cd open-box \
-    && pip install ".[service]"
+    && echo "3.8" > .python-version \
+    && echo "django==2.2.17\npymongo<4.0\nbson\npyjwt" > requirements/service.txt \
+    && sed -i 's/config_advisor.save_history()/# config_advisor.save_history()/' openbox/artifact/bo_advice/views.py \
+    && uv add --dev setuptools wheel \
+    && uv sync --extra service \
+    && echo "[database]\ndatabase_address=mongo\ndatabase_port=27017\nuser=openbox\npassword=openbox" > conf/service.conf \
+    && uv run /open-box/scripts/manage_service.sh migrate 
 
-RUN echo """ \
-[database] \
-database_address=mongo \
-database_port=27017 \
-user=openbox \
-password=openbox \
-""" >> conf/service.conf
+WORKDIR /open-box
 
-RUN ./scripts/manage_service.sh migrate
-
-ENTRYPOINT ["./scripts/manage_service.sh start"]
-
-# astral/uv, after cloning repository
-
-# Python >= 3.8
-# SWIG == 3.0
-# pip install --upgrade pip setuptools wheel
-
-# git clone https://github.com/PKU-DAIR/open-box.git
-# cd open-box
-# pip install ".[service]"
-
-
-# After starting MongoDB, modify “open-box/conf/service.conf” to set database information. If this is your first time running the service, create the service.conf file by copying the template config file from “open-box/conf/template/service.conf.template” to “open-box/conf/” and rename it to service.conf.
-
-# [database]
-# database_address=mongodb
-# database_port=27017
-# user=xxxx
-# password=xxxx
+CMD ["uv", "run", "openbox/artifact/manage.py", "runserver", "0.0.0.0:8000"]

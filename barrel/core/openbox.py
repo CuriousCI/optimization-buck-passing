@@ -35,7 +35,7 @@ def update_observation(
     objectives,
     constraints=[],
     trial_info={},
-    trial_state: TrialState = TrialState.SUCCESS,
+    trial_state=0,
 ) -> None:
     response = json.loads(
         requests.post(
