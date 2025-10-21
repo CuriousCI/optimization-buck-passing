@@ -3,4 +3,4 @@
 echo "$@" >> /data/job.log
 
 cd /data
-uv run worker.py "$@" >> /data/job.log
+uv run src/worker.py "$@" >> /data/job.log

@@ -27,7 +27,3 @@ uv run main.py
 ```
 
 Now the jobs will start!
-
-== On an architecture point of view
-
-![barrel.png](barrel.png)

@@ -7,7 +7,14 @@ requires-python = ">=3.11"
 dependencies = [
     "openbox>=0.8.4",
     "requests>=2.32.5",
+    "buckpass",
 ]
+
+[tool.uv.sources]
+buckpass = { workspace = true }
+
+[tool.uv.workspace]
+members = ["packages/*"]
 
 [tool.ruff]
 line-length = 80
@@ -15,14 +22,12 @@ line-length = 80
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
-    "E501", 
-    "S101", 
-    "D105",
-    "B019", # Use of `functools.lru_cache` or `functools.cache` on methods can lead to memory leaks
-    "TD003",
-    "TD002",
-    "FIX002",
-    "S311"
+    "S101", # Use of `assert` detected
+    "D100", # Missing docstring in public module
+    "D101", # Missing docstring in public class
+    "D102", # Missing docstring in public method
+    "D103", # Missing docstring in public function
+    "ERA001", # Found commented-out code
 ]
 
 [tool.ruff.format]
@@ -30,9 +35,4 @@ docstring-code-format = true
 docstring-code-line-length = "dynamic"
 
 [tool.basedpyright]
-reportUnknownParameterType = false
-reportUnknownArgumentType = false
-reportUnknownLambdaType = false
-reportUnknownVariableType = false
-reportUnknownMemberType = false
 reportMissingTypeStubs = false

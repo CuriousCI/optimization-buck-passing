@@ -16,9 +16,12 @@ RUN git clone --depth=1 https://github.com/PKU-DAIR/open-box.git \
     && sed -i 's/config_advisor.save_history()/# config_advisor.save_history()/' openbox/artifact/bo_advice/views.py \
     && uv add --dev setuptools wheel \
     && uv sync --extra service \
-    && echo "[database]\ndatabase_address=mongo\ndatabase_port=27017\nuser=openbox\npassword=openbox" > conf/service.conf \
-    && uv run /open-box/scripts/manage_service.sh migrate 
+    && echo "[database]\ndatabase_address=mongo\ndatabase_port=27017\nuser=openbox\npassword=openbox" > conf/service.conf
+    # && uv run /open-box/scripts/manage_service.sh migrate 
 
 WORKDIR /open-box
+COPY services/django.sh .
 
-CMD ["uv", "run", "openbox/artifact/manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["./django.sh"]
+
+# CMD ["uv", "run", "openbox/artifact/manage.py", "migrate", "&&", "uv", "run", "openbox/artifact/manage.py", "runserver", "0.0.0.0:8000"]

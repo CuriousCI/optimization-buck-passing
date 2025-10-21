@@ -1,26 +1,38 @@
 import json
-from enum import Enum
+import re
 from typing import Any
 
 import requests
+from typing_extensions import override
+
+from .util import OpenBoxTaskId
 
 
-class TrialState(Enum):
-    SUCCESS = 0
-    FAILED = 1
-    TIMEOUT = 2
-    MEMOUT = 3
+class URL:
+    __url: str
+    __TCP_MAX_PORT = 65535
+
+    def __init__(self, host: str, port: int) -> None:
+        assert 0 <= port <= self.__TCP_MAX_PORT
+        assert re.match("", host)
+
+        self.__url = f"http://{host}:{port}/bo_advice/"
+
+    @override
+    def __str__(self) -> str:
+        return self.__url
+
+    @override
+    def __repr__(self) -> str:
+        return self.__url
 
 
-TaskId = str
-
-
-def get_suggestion(base_url: str, task_id: TaskId):
+def get_suggestion(url: URL, task_id: OpenBoxTaskId):
     response: dict[str, Any] = json.loads(
         requests.post(
-            base_url + "get_suggestion/",
-            timeout=19000,
+            f"{url}get_suggestion/",
             data={"task_id": task_id},
+            timeout=100,
         ).text,
     )
 
@@ -29,8 +41,8 @@ def get_suggestion(base_url: str, task_id: TaskId):
 
 
 def update_observation(
-    base_url: str,
-    task_id: TaskId,
+    url: URL,
+    task_id: OpenBoxTaskId,
     config_dict,
     objectives,
     constraints=[],
@@ -39,7 +51,7 @@ def update_observation(
 ) -> None:
     response = json.loads(
         requests.post(
-            base_url + "update_observation/",
+            f"{url}update_observation/",
             data={
                 "task_id": task_id,
                 "config": json.dumps(config_dict),
@@ -48,6 +60,7 @@ def update_observation(
                 "trial_state": trial_state,
                 "trial_info": json.dumps(trial_info),
             },
+            timeout=100,
         ).text,
     )
 
